@@ -1,0 +1,10 @@
+Max level dims : 20x16
+
+sprites : 17x13 or 16x12 ?
+
+20x17=340
+16x13=208
+
+20x16=320
+16x12=192 +8 for text
+
