@@ -3,46 +3,47 @@ import nsauzede.vsdl2.image as img
 import os
 
 const (
-	title       = '👷 📦 クレートさん V'
-	zoom        = 2
-	text_size   = 8
-	text_ratio  = zoom
-	white       = vsdl2.Color{255, 255, 255, 0}
-	black       = vsdl2.Color{0, 0, 0, 0}
-	text_color  = black
-	width       = 320 * zoom
-	height      = 200 * zoom
-	empty       = 0x0
-	store       = 0x1
-	crate       = 0x2
-	wall        = 0x4
-	c_empty     = ` `
-	c_store     = `.`
-	c_stored    = `*`
-	c_crate     = `$`
-	c_player    = `@`
-	c_splayer   = `&`
-	c_wall      = `#`
-	bpp         = 32
-	res_dir     = os.resource_abs_path('../res')
-	font_file   = res_dir + '/fonts/RobotoMono-Regular.ttf'
-	levels_file = res_dir + '/levels/levels.txt'
-	base_dir    = os.dir(os.real_path(os.executable()))
-	scores_file = base_dir + '/scores.txt'
-	i_empty     = res_dir + '/images/empty.png'
-	i_store     = res_dir + '/images/store.png'
-	i_stored    = res_dir + '/images/stored.png'
-	i_crate     = res_dir + '/images/crate.png'
-	i_player    = res_dir + '/images/player.png'
-	i_splayer   = res_dir + '/images/splayer.png'
-	i_wall      = res_dir + '/images/wall.png'
-	n_empty     = 0
-	n_store     = 1
-	n_stored    = 2
-	n_crate     = 3
-	n_player    = 4
-	n_splayer   = 5
-	n_wall      = 6
+	title          = 'クレートさん V'
+	scores_version = 1
+	zoom           = 2
+	text_size      = 8
+	text_ratio     = zoom
+	white          = vsdl2.Color{255, 255, 255, 0}
+	black          = vsdl2.Color{0, 0, 0, 0}
+	text_color     = black
+	width          = 320 * zoom
+	height         = 200 * zoom
+	empty          = 0x0
+	store          = 0x1
+	crate          = 0x2
+	wall           = 0x4
+	c_empty        = ` `
+	c_store        = `.`
+	c_stored       = `*`
+	c_crate        = `$`
+	c_player       = `@`
+	c_splayer      = `&`
+	c_wall         = `#`
+	bpp            = 32
+	res_dir        = os.resource_abs_path('../res')
+	font_file      = res_dir + '/fonts/RobotoMono-Regular.ttf'
+	levels_file    = res_dir + '/levels/levels.txt'
+	base_dir       = os.dir(os.real_path(os.executable()))
+	scores_file    = base_dir + '/scores.txt'
+	i_empty        = res_dir + '/images/empty.png'
+	i_store        = res_dir + '/images/store.png'
+	i_stored       = res_dir + '/images/stored.png'
+	i_crate        = res_dir + '/images/crate.png'
+	i_player       = res_dir + '/images/player.png'
+	i_splayer      = res_dir + '/images/splayer.png'
+	i_wall         = res_dir + '/images/wall.png'
+	n_empty        = 0
+	n_store        = 1
+	n_stored       = 2
+	n_crate        = 3
+	n_player       = 4
+	n_splayer      = 5
+	n_wall         = 6
 )
 
 enum Status {
@@ -63,11 +64,12 @@ mut:
 }
 
 struct Score {
+	version byte = scores_version
 mut:
-	level  int
-	pushes int
-	moves  int
-	time_s u32
+	level   int
+	pushes  int
+	moves   int
+	time_s  u32
 }
 
 struct Snapshot {
@@ -411,15 +413,6 @@ fn (mut g Game) delete() {
 	}
 }
 
-fn load_scores() []Score {
-	mut ret := []Score{}
-	s := os.read_file_array<Score>(scores_file)
-	if s.len > 0 {
-		ret = s
-	}
-	return ret
-}
-
 fn (mut g Game) save_score() {
 	mut push_score := true
 	for score in g.scores {
@@ -442,8 +435,21 @@ fn save_scores(scores []Score) {
 	if scores.len > 0 {
 		os.write_file_array(scores_file, scores)
 	} else {
-		os.rm(scores_file)
+		os.rm(scores_file) // TODO : understand why an empty file crashes read_file_array
 	}
+}
+
+fn load_scores() []Score {
+	mut ret := []Score{}
+	s := os.read_file_array<Score>(scores_file)
+	if s.len > 0 {
+		expected_version := scores_version
+		if s[0].version != expected_version {
+			panic('Scores version mismatch (read ${s[0].version}, expected $expected_version)')
+		}
+		ret = s
+	}
+	return ret
 }
 
 fn new_game(title string) Game {
