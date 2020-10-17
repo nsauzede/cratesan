@@ -1,0 +1,23 @@
+name: V
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        sudo apt install --quiet -y libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev libsdl2-mixer-dev
+        git clone https://github.com/vlang/v.git
+        (cd v ; make)
+        v/v install nsauzede.vsdl2
+    - name: build
+      run: v/v build src/cratesan.v
