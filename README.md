@@ -5,7 +5,8 @@
 [![Build Status][VWorkflowBadge]][WorkflowUrl]
 
 </div>
-A tribute to [Sokoban](https://sokoban.jp/) by Thinking Rabbit, made in [Rust](Rust) and [V](V) languages, using SDL2 for multimedia.
+A tribute to [Sokoban](https://sokoban.jp/) by Thinking Rabbit,
+made in Rust and V languages, using SDL2 for multimedia.
 
 ![Screenshot of CrateSan](res/images/cratesan.png)
 
@@ -33,6 +34,7 @@ in order to build on Windows.
 
 # Controls
 - Arrows to move the player
+- "U" to undo last move
 - Return to proceed to next level, when current is won
 - "R" to restart level
 
