@@ -1,4 +1,10 @@
 # 👷 📦 クレートさん (CrateSan, or MrCrate)
+<div align="center">
+
+[![Build Status][RustWorkflowBadge]][WorkflowUrl]
+[![Build Status][VWorkflowBadge]][WorkflowUrl]
+
+</div>
 A tribute to [Sokoban](https://sokoban.jp/) by Thinking Rabbit, made in [Rust](Rust) and [V](V) languages, using SDL2 for multimedia.
 
 ![Screenshot of CrateSan](res/images/cratesan.png)
@@ -32,3 +38,8 @@ in order to build on Windows.
 
 # Credits
 All the levels are Copyright Thinking Rabbit, downloaded from this [URL](https://www.sourcecode.se/sokoban/levels?act=dnl_text&file=Original.slc).
+
+[RustWorkflowBadge]: https://github.com/nsauzede/cratesan_/workflows/Rust/badge.svg
+[VWorkflowBadge]: https://github.com/nsauzede/cratesan_/workflows/V/badge.svg
+
+[WorkflowUrl]: https://github.com/nsauzede/cratesan_/commits/f-foo
