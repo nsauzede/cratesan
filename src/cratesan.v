@@ -193,7 +193,7 @@ fn (mut g Game) can_move(x, y int) bool {
 	return false
 }
 
-// Try to move to x+dx:y+dy and also push to x+2dx:y+2dy
+// Try to move to x+dx:y+dy and possibly also push from x+dx:y+dy to x+2dx:y+2dy
 fn (mut g Game) try_move(dx, dy int) bool {
 	mut do_it := false
 	x := g.snap.state.px + dx
