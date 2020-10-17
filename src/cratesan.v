@@ -183,7 +183,7 @@ fn (mut g Game) push_undo(full bool) {
 	g.snap.undo_states << state
 }
 
-fn (mut g Game) can_move(x, y int) bool {
+fn (mut g Game) can_move(x int, y int) bool {
 	if x < g.levels[g.level].w && y < g.levels[g.level].h {
 		e := g.snap.state.map[y][x]
 		if e == empty || e == store {
@@ -193,8 +193,8 @@ fn (mut g Game) can_move(x, y int) bool {
 	return false
 }
 
-// Try to move to x+dx:y+dy and also push to x+2dx:y+2dy
-fn (mut g Game) try_move(dx, dy int) bool {
+// Try to move to x+dx:y+dy and possibly also push from x+dx:y+dy to x+2dx:y+2dy
+fn (mut g Game) try_move(dx int, dy int) bool {
 	mut do_it := false
 	x := g.snap.state.px + dx
 	y := g.snap.state.py + dy
@@ -497,7 +497,7 @@ fn new_game(title string) Game {
 	return g
 }
 
-fn (g &Game) draw_text(x, y int, text string, tcol vsdl2.Color) {
+fn (g &Game) draw_text(x int, y int, text string, tcol vsdl2.Color) {
 	if !isnil(g.font) {
 		tcol_ := C.SDL_Color{tcol.r, tcol.g, tcol.b, tcol.a}
 		tsurf := C.TTF_RenderText_Solid(g.font, text.str, tcol_)
@@ -569,7 +569,7 @@ fn (mut g Game) draw_map() {
 		ts := g.snap.state.time_s % 60
 		tm := (g.snap.state.time_s / 60) % 60
 		th := g.snap.state.time_s / 3600
-		g.draw_text(0, g.height - text_size * text_ratio - 4, '${g.level+1:02d}| moves: ${g.snap.state.moves:04d} pushes: ${g.snap.state.pushes:04d} time:$th:${tm:02}:${ts:02} $status',
+		g.draw_text(0, g.height - text_size * text_ratio - 4, '${g.level + 1:02d}| moves: ${g.snap.state.moves:04d} pushes: ${g.snap.state.pushes:04d} time:$th:${tm:02}:${ts:02} $status',
 			text_color)
 		C.SDL_RenderPresent(g.renderer)
 		g.must_draw = false

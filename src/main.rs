@@ -108,21 +108,20 @@ impl<'ttf> Game<'ttf> {
 	fn load_levels() -> Vec<Level> {
 		let root_dir = current_exe().unwrap();
 		let root_dir = root_dir
+		.parent().unwrap()
+		.parent().unwrap()
 			.parent()
 			.unwrap()
-			.parent()
-			.unwrap()
-			.parent()
-			.unwrap();
-		let parent_dir = root_dir.parent().unwrap();
-		let levels_file = parent_dir.join("res").join("levels").join(LEVELS_FILE);
+		; // root_dir is shifted left three times to pop exe, <target> and target/
+//		let parent_dir = root_dir.parent().unwrap();
+		let levels_file = root_dir.join("res").join("levels").join(LEVELS_FILE);
 		let levels_file = levels_file.to_str().unwrap();
 		let mut levels = Vec::new();
 		let mut vlevels = Vec::new();
 		let mut slevel = String::new();
 		let mut level = 1;
 		let mut slevels = String::new();
-		let mut f = File::open(levels_file).unwrap();
+		let mut f = File::open(levels_file).expect(format!("Couldn't open the levels {}", levels_file).as_str());
 		f.read_to_string(&mut slevels).unwrap();
 		for line in slevels.lines() {
 			if line.is_empty() {
@@ -676,8 +675,6 @@ fn main() {
 	let texture_creator: TextureCreator<_> = canvas.texture_creator();
 	let root_dir = current_exe().unwrap();
 	let root_dir = root_dir
-		.parent()
-		.unwrap()
 		.parent()
 		.unwrap()
 		.parent()
