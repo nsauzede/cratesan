@@ -3,47 +3,47 @@ import nsauzede.vsdl2.image as img
 import os
 
 const (
-	title          = 'クレートさん V'
-	scores_version = 1
-	zoom           = 2
-	text_size      = 8
-	text_ratio     = zoom
-	white          = vsdl2.Color{255, 255, 255, 0}
-	black          = vsdl2.Color{0, 0, 0, 0}
-	text_color     = black
-	width          = 320 * zoom
-	height         = 200 * zoom
-	empty          = 0x0
-	store          = 0x1
-	crate          = 0x2
-	wall           = 0x4
-	c_empty        = ` `
-	c_store        = `.`
-	c_stored       = `*`
-	c_crate        = `$`
-	c_player       = `@`
-	c_splayer      = `&`
-	c_wall         = `#`
-	bpp            = 32
-	res_dir        = os.resource_abs_path('../res')
-	font_file      = res_dir + '/fonts/RobotoMono-Regular.ttf'
-	levels_file    = res_dir + '/levels/levels.txt'
-	base_dir       = os.dir(os.real_path(os.executable()))
-	scores_file    = base_dir + '/scores.txt'
-	i_empty        = res_dir + '/images/empty.png'
-	i_store        = res_dir + '/images/store.png'
-	i_stored       = res_dir + '/images/stored.png'
-	i_crate        = res_dir + '/images/crate.png'
-	i_player       = res_dir + '/images/player.png'
-	i_splayer      = res_dir + '/images/splayer.png'
-	i_wall         = res_dir + '/images/wall.png'
-	n_empty        = 0
-	n_store        = 1
-	n_stored       = 2
-	n_crate        = 3
-	n_player       = 4
-	n_splayer      = 5
-	n_wall         = 6
+	title       = 'クレートさん V'
+	version     = 1
+	zoom        = 2
+	text_size   = 8
+	text_ratio  = zoom
+	white       = vsdl2.Color{255, 255, 255, 0}
+	black       = vsdl2.Color{0, 0, 0, 0}
+	text_color  = black
+	width       = 320 * zoom
+	height      = 200 * zoom
+	empty       = 0x0
+	store       = 0x1
+	crate       = 0x2
+	wall        = 0x4
+	c_empty     = ` `
+	c_store     = `.`
+	c_stored    = `*`
+	c_crate     = `$`
+	c_player    = `@`
+	c_splayer   = `&`
+	c_wall      = `#`
+	bpp         = 32
+	res_dir     = os.resource_abs_path('../res')
+	font_file   = res_dir + '/fonts/RobotoMono-Regular.ttf'
+	levels_file = res_dir + '/levels/levels.txt'
+	base_dir    = os.dir(os.real_path(os.executable()))
+	scores_file = base_dir + '/scores.txt'
+	i_empty     = res_dir + '/images/empty.png'
+	i_store     = res_dir + '/images/store.png'
+	i_stored    = res_dir + '/images/stored.png'
+	i_crate     = res_dir + '/images/crate.png'
+	i_player    = res_dir + '/images/player.png'
+	i_splayer   = res_dir + '/images/splayer.png'
+	i_wall      = res_dir + '/images/wall.png'
+	n_empty     = 0
+	n_store     = 1
+	n_stored    = 2
+	n_crate     = 3
+	n_player    = 4
+	n_splayer   = 5
+	n_wall      = 6
 )
 
 enum Status {
@@ -64,11 +64,11 @@ mut:
 }
 
 struct Score {
-	version byte = scores_version
+	version byte = version
 mut:
-	level   int
-	pushes  int
-	moves   int
+	level   u16
+	moves   u16
+	pushes  u16
 	time_s  u32
 }
 
@@ -81,17 +81,16 @@ mut:
 struct State {
 mut:
 	map    [][]byte // TODO : make it an option ? (ie: map ?[][]byte) -- seems broken rn
+	moves  int
+	pushes int
+	time_s u32
 	stored int
 	px     int
 	py     int
-	time_s u32
-	pushes int
-	moves  int
 	undos  int
 }
 
 struct Game {
-	title      string
 mut:
 	// Game flags and status
 	quit       bool
@@ -119,6 +118,14 @@ mut:
 	block_text []voidptr
 	// TTF stuff
 	font       voidptr
+}
+
+fn (g Game) debug_dump() {
+	if g.debug {
+		println('level=${g.level + 1}' + ' moves=$g.snap.state.moves' + ' pushes=$g.snap.state.pushes' +
+			' time=$g.snap.state.time_s' + ' crates=$g.snap.state.stored/${g.levels[g.level].crates}' + ' snaps=$g.snapshots.len' +
+			' undos=$g.snap.state.undos/$g.snap.undo_states.len')
+	}
 }
 
 fn (g Game) save_state(mut state State, full bool) {
@@ -162,20 +169,59 @@ fn (mut g Game) load_snapshot() {
 		snap := g.snapshots.pop()
 		g.snap.undo_states = snap.undo_states
 		g.restore_state(snap.state)
-		g.must_draw = true
 		save_scores(g.scores)
 		g.save_snapshot() // limit snapshots depth to 1
+		g.must_draw = true
 	}
+}
+
+fn (mut g Game) save_score() {
+	mut push_score := true
+	for score in g.scores {
+		if score.level == g.level {
+			push_score = false
+		}
+	}
+	if push_score {
+		s := Score{
+			level: u16(g.level)
+			moves: u16(g.snap.state.moves)
+			pushes: u16(g.snap.state.pushes)
+			time_s: g.snap.state.time_s
+		}
+		g.scores << s
+	}
+}
+
+fn save_scores(scores []Score) {
+	if scores.len > 0 {
+		os.write_file_array(scores_file, scores)
+	} else {
+		os.rm(scores_file) // TODO : understand why an empty file crashes read_file_array
+	}
+}
+
+fn load_scores() []Score {
+	mut ret := []Score{}
+	s := os.read_file_array<Score>(scores_file)
+	if s.len > 0 {
+		expected_version := version
+		if s[0].version != expected_version {
+			panic('Scores version mismatch (read ${s[0].version}, expected $expected_version)')
+		}
+		ret = s
+	}
+	return ret
 }
 
 fn (mut g Game) pop_undo() {
 	if g.snap.undo_states.len > 0 {
 		state := g.snap.undo_states.pop()
 		g.restore_state(state)
-		g.must_draw = true
 		save_scores(g.scores)
 		g.snap.state.undos++
 		g.debug_dump()
+		g.must_draw = true
 	}
 }
 
@@ -231,16 +277,10 @@ fn (mut g Game) try_move(dx int, dy int) bool {
 		g.snap.state.moves++
 		g.snap.state.px = x
 		g.snap.state.py = y
-		g.must_draw = true
 		g.debug_dump()
+		g.must_draw = true
 	}
 	return do_it
-}
-
-fn (g Game) debug_dump() {
-	if g.debug {
-		println('level=$g.level crates=$g.snap.state.stored/$g.levels[g.level].crates moves=$g.snap.state.moves pushes=$g.snap.state.pushes undos=$g.snap.state.undos/$g.snap.undo_states.len snaps=$g.snapshots.len time=$g.snap.state.time_s')
-	}
 }
 
 fn load_levels() []Level {
@@ -413,50 +453,10 @@ fn (mut g Game) delete() {
 	}
 }
 
-fn (mut g Game) save_score() {
-	mut push_score := true
-	for score in g.scores {
-		if score.level == g.level {
-			push_score = false
-		}
-	}
-	if push_score {
-		s := Score{
-			level: g.level
-			pushes: g.snap.state.pushes
-			moves: g.snap.state.moves
-			time_s: g.snap.state.time_s
-		}
-		g.scores << s
-	}
-}
-
-fn save_scores(scores []Score) {
-	if scores.len > 0 {
-		os.write_file_array(scores_file, scores)
-	} else {
-		os.rm(scores_file) // TODO : understand why an empty file crashes read_file_array
-	}
-}
-
-fn load_scores() []Score {
-	mut ret := []Score{}
-	s := os.read_file_array<Score>(scores_file)
-	if s.len > 0 {
-		expected_version := scores_version
-		if s[0].version != expected_version {
-			panic('Scores version mismatch (read ${s[0].version}, expected $expected_version)')
-		}
-		ret = s
-	}
-	return ret
-}
-
-fn new_game(title string) Game {
+fn new_game() Game {
 	levels := load_levels()
 	scores := load_scores()
 	mut g := Game{
-		title: title
 		quit: false
 		status: .play
 		must_draw: true
@@ -471,7 +471,7 @@ fn new_game(title string) Game {
 	C.TTF_Init()
 	C.atexit(C.TTF_Quit)
 	vsdl2.create_window_and_renderer(width, height, 0, &g.window, &g.renderer)
-	C.SDL_SetWindowTitle(g.window, g.title.str)
+	C.SDL_SetWindowTitle(g.window, title.str)
 	g.screen = vsdl2.create_rgb_surface(0, width, height, bpp, 0x00FF0000, 0x0000FF00,
 		0x000000FF, 0xFF000000)
 	g.texture = C.SDL_CreateTexture(g.renderer, C.SDL_PIXELFORMAT_ARGB8888, C.SDL_TEXTUREACCESS_STREAMING,
@@ -723,7 +723,7 @@ fn (g Game) sleep() {
 }
 
 fn main() {
-	mut game := new_game(title)
+	mut game := new_game()
 	for !game.quit {
 		game.handle_events()
 		game.draw_map()
