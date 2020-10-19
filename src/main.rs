@@ -77,6 +77,11 @@ struct Score {
 	time_s: u32,
 }
 
+struct Snapshot {
+	state: State,
+	undo_states: Vec<State>,
+}
+
 struct State {
 	map: Map,
 	moves: i32,
@@ -98,9 +103,8 @@ struct Game<'ttf> {
 	levels: Vec<Level>,
 	level: usize,
 	// Game states
-	snapshots: Vec<u8>,
-	state: State,
-	undo_states: Vec<State>,
+	snapshots: Vec<Snapshot>,
+	snap: Snapshot,
 	last_ticks: SystemTime,
 	scores: Vec<Score>,
 	scores_file: String,
@@ -119,14 +123,14 @@ impl<'ttf> Game<'ttf> {
 			println!(
 				"level={} crates={}/{} moves={} pushes={} undos={}/{} snaps={} time={}",
 				self.level + 1,
-				self.state.moves,
-				self.state.pushes,
-				self.state.time_s,
-				self.state.stored,
+				self.snap.state.moves,
+				self.snap.state.pushes,
+				self.snap.state.time_s,
+				self.snap.state.stored,
 				self.levels[self.level].crates,
 				self.snapshots.len(),
-				self.state.undos,
-				self.undo_states.len(),
+				self.snap.state.undos,
+				self.snap.undo_states.len(),
 			);
 		}
 	}
@@ -134,24 +138,24 @@ impl<'ttf> Game<'ttf> {
 	fn save_state(&self, state: &mut State, full: bool) {
 		*state = State {
 			map: Vec::new(),
-			stored: self.state.stored,
-			px: self.state.px,
-			py: self.state.py,
-			time_s: self.state.time_s,
-			pushes: self.state.pushes,
-			moves: self.state.moves,
-			undos: self.state.undos,
+			stored: self.snap.state.stored,
+			px: self.snap.state.px,
+			py: self.snap.state.py,
+			time_s: self.snap.state.time_s,
+			pushes: self.snap.state.pushes,
+			moves: self.snap.state.moves,
+			undos: self.snap.state.undos,
 		};
 		if full {
-			state.map = self.state.map.clone()
+			state.map = self.snap.state.map.clone()
 		}
 	}
 
 	fn restore_state(&mut self, state_: State) {
-		let map = self.state.map.clone();
-		self.state = state_;
-		if self.state.map.is_empty() {
-			self.state.map = map;
+		let map = self.snap.state.map.clone();
+		self.snap.state = state_;
+		if self.snap.state.map.is_empty() {
+			self.snap.state.map = map;
 		}
 	}
 
@@ -165,9 +169,9 @@ impl<'ttf> Game<'ttf> {
 		if push_score {
 			self.scores.push(Score {
 				level: self.level as u16,
-				pushes: self.state.pushes as u16,
-				moves: self.state.moves as u16,
-				time_s: self.state.time_s,
+				pushes: self.snap.state.pushes as u16,
+				moves: self.snap.state.moves as u16,
+				time_s: self.snap.state.time_s,
 			});
 		}
 	}
@@ -232,10 +236,10 @@ impl<'ttf> Game<'ttf> {
 	}
 
 	fn pop_undo(&mut self) {
-		if let Some(state) = self.undo_states.pop() {
+		if let Some(state) = self.snap.undo_states.pop() {
 			self.restore_state(state);
 			self.save_scores();
-			self.state.undos += 1;
+			self.snap.state.undos += 1;
 			self.debug_dump();
 			self.must_draw = true;
 		}
@@ -253,7 +257,7 @@ impl<'ttf> Game<'ttf> {
 			undos: 0,
 		};
 		self.save_state(&mut s, full);
-		self.undo_states.push(s);
+		self.snap.undo_states.push(s);
 	}
 
 	fn load_levels(levels_file: &str) -> Vec<Level> {
@@ -411,17 +415,19 @@ impl<'ttf> Game<'ttf> {
 			debug: false,
 			levels,
 			snapshots: Vec::new(),
-			state: State {
-				map: Vec::new(),
-				stored: 0,
-				px: 0,
-				py: 0,
-				time_s: 0,
-				pushes: 0,
-				moves: 0,
-				undos: 0,
+			snap: Snapshot {
+				state: State {
+					map: Vec::new(),
+					stored: 0,
+					px: 0,
+					py: 0,
+					time_s: 0,
+					pushes: 0,
+					moves: 0,
+					undos: 0,
+				},
+				undo_states: Vec::new(),
 			},
-			undo_states: Vec::new(),
 			level,
 			last_ticks: SystemTime::now(),
 			scores,
@@ -441,17 +447,17 @@ impl<'ttf> Game<'ttf> {
 			self.status = Status::Play;
 			self.must_draw = true;
 			self.level = level;
-			self.state.moves = 0;
-			self.state.pushes = 0;
-			self.state.time_s = 0;
-			self.state.map = self.levels[level].map.clone();
-			self.undo_states = Vec::new();
+			self.snap.state.moves = 0;
+			self.snap.state.pushes = 0;
+			self.snap.state.time_s = 0;
+			self.snap.state.map = self.levels[level].map.clone();
+			self.snap.undo_states = Vec::new();
 			self.levels[self.level].crates = self.levels[self.level].crates;
-			self.state.stored = self.levels[level].stored;
+			self.snap.state.stored = self.levels[level].stored;
 			self.levels[self.level].w = self.levels[level].w;
 			self.levels[self.level].h = self.levels[level].h;
-			self.state.px = self.levels[level].px;
-			self.state.py = self.levels[level].py;
+			self.snap.state.px = self.levels[level].px;
+			self.snap.state.py = self.levels[level].py;
 			self.bw = self.width / self.levels[self.level].w;
 			self.bh = (self.height - TEXT_SIZE * TEXT_RATIO) / self.levels[self.level].h;
 			true
@@ -462,7 +468,7 @@ impl<'ttf> Game<'ttf> {
 
 	fn can_move(&self, x: usize, y: usize) -> bool {
 		if x < self.levels[self.level].w && y < self.levels[self.level].h {
-			let e = self.state.map[y][x];
+			let e = self.snap.state.map[y][x];
 			if e == EMPTY || e == STORE {
 				return true;
 			}
@@ -473,8 +479,8 @@ impl<'ttf> Game<'ttf> {
 	/// Try to move to x+dx:y+dy and also push to x+2dx:y+2dy
 	fn try_move(&mut self, dx: isize, dy: isize) {
 		let mut do_it = false;
-		let x = self.state.px as isize + dx;
-		let y = self.state.py as isize + dy;
+		let x = self.snap.state.px as isize + dx;
+		let y = self.snap.state.py as isize + dy;
 		if x < 0 || y < 0 {
 			return;
 		}
@@ -483,21 +489,21 @@ impl<'ttf> Game<'ttf> {
 		if x >= self.levels[self.level].w || y >= self.levels[self.level].h {
 			return;
 		}
-		if self.state.map[y][x] & CRATE == CRATE {
+		if self.snap.state.map[y][x] & CRATE == CRATE {
 			let to_x = (x as isize + dx) as usize;
 			let to_y = (y as isize + dy) as usize;
 			if self.can_move(to_x, to_y) {
 				do_it = true;
 				self.push_undo(true);
-				self.state.pushes += 1;
-				self.state.map[y][x] &= !CRATE;
-				if self.state.map[y][x] & STORE == STORE {
-					self.state.stored -= 1;
+				self.snap.state.pushes += 1;
+				self.snap.state.map[y][x] &= !CRATE;
+				if self.snap.state.map[y][x] & STORE == STORE {
+					self.snap.state.stored -= 1;
 				}
-				self.state.map[to_y][to_x] |= CRATE;
-				if self.state.map[to_y][to_x] & STORE == STORE {
-					self.state.stored += 1;
-					if self.state.stored == self.levels[self.level].crates {
+				self.snap.state.map[to_y][to_x] |= CRATE;
+				if self.snap.state.map[to_y][to_x] & STORE == STORE {
+					self.snap.state.stored += 1;
+					if self.snap.state.stored == self.levels[self.level].crates {
 						self.status = Status::Win;
 					}
 				}
@@ -509,9 +515,9 @@ impl<'ttf> Game<'ttf> {
 			}
 		}
 		if do_it {
-			self.state.moves += 1;
-			self.state.px = x;
-			self.state.py = y;
+			self.snap.state.moves += 1;
+			self.snap.state.px = x;
+			self.snap.state.py = y;
 			if let Status::Win = self.status {
 				self.save_score();
 				self.save_scores();
@@ -534,7 +540,7 @@ impl<'ttf> Game<'ttf> {
 			.as_millis();
 		if duration > 1000 {
 			if let Status::Play = self.status {
-				self.state.time_s += (duration / 1000) as u32;
+				self.snap.state.time_s += (duration / 1000) as u32;
 			}
 			self.last_ticks = curr_ticks;
 			self.must_draw = true;
@@ -557,16 +563,16 @@ impl<'ttf> Game<'ttf> {
 				.expect("Couldn't copy texture into window");
 			let x = (WIDTH - self.levels[self.level].w * self.bw) / 2;
 			let y = 0;
-			for (j, line) in self.state.map.iter().enumerate() {
+			for (j, line) in self.snap.state.map.iter().enumerate() {
 				for (i, &e) in line.iter().enumerate() {
 					let idx = if e == EMPTY {
-						if self.state.px == i && self.state.py == j {
+						if self.snap.state.px == i && self.snap.state.py == j {
 							N_PLAYER
 						} else {
 							N_EMPTY
 						}
 					} else if e == STORE {
-						if self.state.px == i && self.state.py == j {
+						if self.snap.state.px == i && self.snap.state.py == j {
 							N_SPLAYER
 						} else {
 							N_STORE
@@ -599,14 +605,14 @@ impl<'ttf> Game<'ttf> {
 				Status::Pause => "*PAUSE* Press Space..",
 				_ => "",
 			};
-			let ts = self.state.time_s % 60;
-			let tm = (self.state.time_s / 60) % 60;
-			let th = self.state.time_s / 3600;
+			let ts = self.snap.state.time_s % 60;
+			let tm = (self.snap.state.time_s / 60) % 60;
+			let th = self.snap.state.time_s / 3600;
 			let text = format!(
 				"{:02}| moves: {:04} pushes: {:04} time:{}:{:02}:{:02} {}",
 				self.level + 1,
-				self.state.moves,
-				self.state.pushes,
+				self.snap.state.moves,
+				self.snap.state.pushes,
 				th,
 				tm,
 				ts,
