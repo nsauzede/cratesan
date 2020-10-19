@@ -25,11 +25,12 @@ const (
 	c_splayer   = `&`
 	c_wall      = `#`
 	bpp         = 32
+	root_dir    = os.resource_abs_path('..')
 	res_dir     = os.resource_abs_path('../res')
 	font_file   = res_dir + '/fonts/RobotoMono-Regular.ttf'
 	levels_file = res_dir + '/levels/levels.txt'
 	base_dir    = os.dir(os.real_path(os.executable()))
-	scores_file = base_dir + '/scores.txt'
+	scores_file = root_dir + '/scores.txt'
 	i_empty     = res_dir + '/images/empty.png'
 	i_store     = res_dir + '/images/store.png'
 	i_stored    = res_dir + '/images/stored.png'
@@ -64,12 +65,12 @@ mut:
 }
 
 struct Score {
-	version byte = version
 mut:
-	level   u16
-	moves   u16
-	pushes  u16
-	time_s  u32
+	// version byte = version
+	level  u16
+	moves  u16
+	pushes u16
+	time_s u32
 }
 
 struct Snapshot {
@@ -195,21 +196,42 @@ fn (mut g Game) save_score() {
 
 fn save_scores(scores []Score) {
 	if scores.len > 0 {
-		os.write_file_array(scores_file, scores)
-	} else {
-		os.rm(scores_file) // TODO : understand why an empty file crashes read_file_array
+		os.rm(scores_file) // TODO : understand why create doesn't reset contents
+		mut f := os.create(scores_file) or {
+			panic("can't create scores file")
+		}
+		f.writeln('$version')
+		f.writeln('$scores.len')
+		for s in scores {
+			f.writeln('$s.level $s.pushes $s.moves $s.time_s')
+		}
 	}
 }
 
 fn load_scores() []Score {
 	mut ret := []Score{}
-	s := os.read_file_array<Score>(scores_file)
-	if s.len > 0 {
-		expected_version := version
-		if s[0].version != expected_version {
-			panic('Scores version mismatch (read ${s[0].version}, expected $expected_version)')
+	mut nscores := 0
+	contents := os.read_file(scores_file) or {
+		return ret
+	}
+	mut n := 0
+	for line in contents.split_into_lines() {
+		if n == 0 {
+			ver := line.int()
+			if ver != version {
+				panic('Invalid scores version. Please delete the scores file $scores_file' + '.')
+			}
+		} else if n == 1 {
+			nscores = line.int()
+		} else {
+			v := line.split(' ').map(it.int())
+			ret << Score{u16(v[0]), u16(v[1]), u16(v[2]), u32(v[3])}
 		}
-		ret = s
+		n++
+	}
+	if nscores != ret.len {
+		panic('Invalid number of scores (read $nscores parsed $ret.len). Please delete the scores file $scores_file' +
+			'.')
 	}
 	return ret
 }
