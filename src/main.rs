@@ -59,6 +59,7 @@ enum Status {
 	Win,
 }
 
+#[derive(Default)]
 struct Level {
 	crates: u32,
 	w: usize,
@@ -77,12 +78,13 @@ struct Score {
 	time_s: u32,
 }
 
+#[derive(Default)]
 struct Snapshot {
 	state: State,
 	undo_states: Vec<State>,
 }
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
 struct State {
 	map: Map,
 	moves: i32,
@@ -164,16 +166,7 @@ impl<'ttf> Game<'ttf> {
 		self.snapshots.clear(); // limit snapshots depth to 1
 		let mut snap = Snapshot {
 			undo_states: self.snap.undo_states.clone(),
-			state: State {
-				map: Vec::new(),
-				stored: 0,
-				px: 0,
-				py: 0,
-				time_s: 0,
-				pushes: 0,
-				moves: 0,
-				undos: 0,
-			},
+			state: Default::default(),
 		};
 		self.save_state(&mut snap.state, true);
 		self.snapshots.push(snap);
@@ -277,16 +270,7 @@ impl<'ttf> Game<'ttf> {
 	}
 
 	fn push_undo(&mut self, full: bool) {
-		let mut s = State {
-			map: Vec::new(),
-			stored: 0,
-			px: 0,
-			py: 0,
-			time_s: 0,
-			pushes: 0,
-			moves: 0,
-			undos: 0,
-		};
+		let mut s = Default::default();
 		self.save_state(&mut s, full);
 		self.snap.undo_states.push(s);
 	}
@@ -317,25 +301,21 @@ impl<'ttf> Game<'ttf> {
 			vlevels.push(slevel);
 		}
 		for s in vlevels {
-			let mut map = Vec::new();
-			let mut crates = 0;
+			let mut lev = Level {
+				..Default::default()
+			};
 			let mut stores = 0;
-			let mut stored = 0;
-			let mut w = 0;
-			let mut h = 0;
-			let mut px = 0;
-			let mut py = 0;
 			let mut player_found = false;
 			for line in s.lines() {
-				if line.len() > w {
-					w = line.len();
+				if line.len() > lev.w {
+					lev.w = line.len();
 				}
 			}
 			for line in s.lines() {
 				if line.is_empty() {
 					continue;
 				}
-				let mut v = vec![EMPTY; w];
+				let mut v = vec![EMPTY; lev.w];
 				for (i, e) in line.chars().enumerate() {
 					match e {
 						C_EMPTY => {
@@ -347,20 +327,20 @@ impl<'ttf> Game<'ttf> {
 						}
 						C_CRATE => {
 							v[i] = CRATE;
-							crates += 1;
+							lev.crates += 1;
 						}
 						C_STORED => {
 							v[i] = CRATE | STORE;
 							stores += 1;
-							crates += 1;
-							stored += 1;
+							lev.crates += 1;
+							lev.stored += 1;
 						}
 						C_PLAYER => {
 							if player_found {
 								panic!("Player found multiple times in level {}", level);
 							};
-							px = i;
-							py = h;
+							lev.px = i;
+							lev.py = lev.h;
 							player_found = true;
 							v[i] = EMPTY;
 						}
@@ -368,8 +348,8 @@ impl<'ttf> Game<'ttf> {
 							if player_found {
 								panic!("Player found multiple times in level {}", level);
 							};
-							px = i;
-							py = h;
+							lev.px = i;
+							lev.py = lev.h;
 							player_found = true;
 							v[i] = STORE;
 							stores += 1;
@@ -382,28 +362,20 @@ impl<'ttf> Game<'ttf> {
 						}
 					}
 				}
-				map.push(v);
-				h += 1;
+				lev.map.push(v);
+				lev.h += 1;
 			}
-			if crates != stores {
+			if lev.crates != stores {
 				panic!(
 					"Mismatch between crates={} and stores={} in level",
-					crates, stores
+					lev.crates, stores
 				);
 			}
 			if !player_found {
 				panic!("Player not found in level {}", level);
 			} else {
 			}
-			levels.push(Level {
-				map,
-				crates,
-				stored,
-				w,
-				h,
-				px,
-				py,
-			});
+			levels.push(lev);
 			level += 1;
 		}
 		levels
@@ -446,19 +418,7 @@ impl<'ttf> Game<'ttf> {
 			debug: false,
 			levels,
 			snapshots: Vec::new(),
-			snap: Snapshot {
-				state: State {
-					map: Vec::new(),
-					stored: 0,
-					px: 0,
-					py: 0,
-					time_s: 0,
-					pushes: 0,
-					moves: 0,
-					undos: 0,
-				},
-				undo_states: Vec::new(),
-			},
+			snap: Default::default(),
 			level,
 			last_ticks: SystemTime::now(),
 			scores,
