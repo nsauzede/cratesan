@@ -146,14 +146,6 @@ fn (mut g Game) restore_state(state State) {
 	if state.map.len == 0 {
 		g.snap.state.map = map
 	}
-	if g.status == .win { // remove current level score, if win
-		for i, score in g.scores {
-			if score.level == g.level {
-				println('deleting score $i : $score')
-				g.scores.delete(i)
-			}
-		}
-	}
 }
 
 fn (mut g Game) save_snapshot() {
