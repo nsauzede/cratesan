@@ -5,6 +5,8 @@
 [![Build Status][VWorkflowBadge]][WorkflowUrl]
 
 </div>
+
+# CrateSan
 A tribute to [Sokoban](https://sokoban.jp/) by Thinking Rabbit,
 made in Rust and V languages, using SDL2 for multimedia.
 
@@ -34,12 +36,15 @@ in order to build on Windows.
 
 # Controls
 - Arrows to move the player
-- "U" to undo last move
+- "u" to undo last move
+- "s" to save snapshot
+- "l" to load snapshot
+- "r" to restart level
 - Return to proceed to next level, when current is won
-- "R" to restart level
 
 # Credits
-All the levels are Copyright Thinking Rabbit, downloaded from this [URL](https://www.sourcecode.se/sokoban/levels?act=dnl_text&file=Original.slc).
+- All the levels are Copyright Thinking Rabbit, downloaded from this [URL](https://www.sourcecode.se/sokoban/levels?act=dnl_text&file=Original.slc).
+- Artwork based on Sokoban PC version Copyright Spectrum Holobyte, taken from screenshots at this [URL](https://www.abandonware-france.org/ltf_abandon/ltf_jeu.php?id=468)
 
 [RustWorkflowBadge]: https://github.com/nsauzede/cratesan_/workflows/Rust/badge.svg
 [VWorkflowBadge]: https://github.com/nsauzede/cratesan_/workflows/V/badge.svg
