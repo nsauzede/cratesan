@@ -3,6 +3,7 @@
 # 👷 📦 クレートさん (CrateSan, or MrCrate)
 [![Build Status][RustWorkflowBadge]][WorkflowUrl]
 [![Build Status][VWorkflowBadge]][WorkflowUrl]
+<a href="http://www.sokobano.de/wiki/" target="_blank"><img border="0" title="Go to SokobanWiki!" src="http://www.sokobano.de/wiki/images/Sokowiki-01.gif"></a>
 
 </div>
 
