@@ -82,6 +82,7 @@ struct Snapshot {
 	undo_states: Vec<State>,
 }
 
+#[derive(Clone)]
 struct State {
 	map: Map,
 	moves: i32,
@@ -156,6 +157,36 @@ impl<'ttf> Game<'ttf> {
 		self.snap.state = state_;
 		if self.snap.state.map.is_empty() {
 			self.snap.state.map = map;
+		}
+	}
+
+	fn save_snapshot(&mut self) {
+		self.snapshots.clear(); // limit snapshots depth to 1
+		let mut snap = Snapshot {
+			undo_states: self.snap.undo_states.clone(),
+			state: State {
+				map: Vec::new(),
+				stored: 0,
+				px: 0,
+				py: 0,
+				time_s: 0,
+				pushes: 0,
+				moves: 0,
+				undos: 0,
+			},
+		};
+		self.save_state(&mut snap.state, true);
+		self.snapshots.push(snap);
+		self.debug_dump();
+	}
+
+	fn load_snapshot(&mut self) {
+		if let Some(snap) = self.snapshots.pop() {
+			self.snap.undo_states = snap.undo_states;
+			self.restore_state(snap.state);
+			self.save_scores();
+			self.save_snapshot(); // limit snapshots depth to 1
+			self.must_draw = true;
 		}
 	}
 
@@ -693,6 +724,12 @@ impl<'ttf> Game<'ttf> {
 				}
 				Keycode::U => {
 					self.pop_undo();
+				}
+				Keycode::S => {
+					self.save_snapshot();
+				}
+				Keycode::L => {
+					self.load_snapshot();
 				}
 				Keycode::Up => {
 					self.try_move(0, -1);
