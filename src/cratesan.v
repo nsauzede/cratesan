@@ -22,7 +22,7 @@ const (
 	c_stored    = `*`
 	c_crate     = `$`
 	c_player    = `@`
-	c_splayer   = `&`
+	c_splayer   = `+`
 	c_wall      = `#`
 	bpp         = 32
 	root_dir    = os.resource_abs_path('..')

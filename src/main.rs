@@ -7,7 +7,6 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::video::{Window, WindowContext};
-
 use std::env::current_exe;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -30,7 +29,7 @@ const C_STORE: char = '.';
 const C_STORED: char = '*';
 const C_CRATE: char = '$';
 const C_PLAYER: char = '@';
-const C_SPLAYER: char = '&';
+const C_SPLAYER: char = '+';
 const C_WALL: char = '#';
 const FONT_FILE: &str = "RobotoMono-Regular.ttf";
 const LEVELS_FILE: &str = "levels.txt";
@@ -104,18 +103,23 @@ struct Game<'ttf> {
 	debug: bool,
 	// Game levels
 	levels: Vec<Level>,
-	level: usize,
 	// Game states
+	level: usize,
+	bw: usize, // block dims
+	bh: usize, // block dims
 	snapshots: Vec<Snapshot>,
 	snap: Snapshot,
 	last_ticks: SystemTime,
 	scores: Vec<Score>,
 	scores_file: String,
 	// SDL stuff
+	//sdl_context: &'ttf sdl2::Sdl,
+	sdl_context: sdl2::Sdl,
+	canvas: sdl2::render::Canvas<sdl2::video::Window>,
+	texture_creator: sdl2::render::TextureCreator<sdl2::video::WindowContext>,
+	textures: Vec<sdl2::render::Texture<'ttf>>,
 	width: usize,
 	height: usize,
-	bw: usize, // block dims
-	bh: usize, // block dims
 	// TTF stuff
 	font: sdl2::ttf::Font<'ttf, 'static>,
 }
@@ -381,12 +385,47 @@ impl<'ttf> Game<'ttf> {
 		levels
 	}
 
+	/*
 	fn new(
+		sdl_context: &'ttf sdl2::Sdl,
 		ttf_context: &'ttf sdl2::ttf::Sdl2TtfContext,
 		root_dir: &std::path::Path,
 		width: usize,
 		height: usize,
 	) -> Game<'ttf> {
+	*/
+	fn new(
+	) -> Game<'ttf> {
+
+	let width = WIDTH;
+	let height = HEIGHT;
+	let sdl_context = sdl2::init().expect("SDL initialization failed");
+	let ttf_context = sdl2::ttf::init().expect("SDL TTF initialization failed");
+	let _image_context = sdl2::image::init(InitFlag::PNG).unwrap();
+	let video_subsystem = sdl_context
+		.video()
+		.expect("Couldn't get SDL video subsystem");
+	let window = video_subsystem
+		.window(TITLE, width as u32, height as u32)
+		.position_centered()
+		.build()
+		.expect("Failed to create window");
+	let canvas = window
+		.into_canvas()
+		.target_texture()
+		.present_vsync()
+		.build()
+		.expect("Couldn't get window's canvas");
+	let texture_creator: TextureCreator<_> = canvas.texture_creator();
+	let root_dir = current_exe().unwrap();
+	let root_dir = root_dir
+		.parent()
+		.unwrap()
+		.parent()
+		.unwrap()
+		.parent()
+		.unwrap();
+
 		let levels_file = root_dir.join("res").join("levels").join(LEVELS_FILE);
 		let levels_file = levels_file.to_str().unwrap();
 		let scores_file = root_dir.join(SCORES_FILE).to_str().unwrap().to_string();
@@ -427,9 +466,44 @@ impl<'ttf> Game<'ttf> {
 			bh: 0,
 			width,
 			height,
+			sdl_context,
+			canvas,
+			texture_creator,
+			textures: Vec::new(),
 			font,
 		};
 		g.set_level(level);
+
+	macro_rules! texture {
+		($r:expr, $g:expr, $b:expr) => {
+			create_texture_rect(
+				&mut g.canvas,
+				&g.texture_creator,
+				$r,
+				$g,
+				$b,
+				//g.bw as u32,
+				32 as u32,
+				//g.bh as u32,
+				32 as u32,
+				)
+			.unwrap()
+		};
+		($file:expr) => {
+			load_texture(root_dir, &g.texture_creator, $file).unwrap()
+		};
+	}
+	g.textures = vec![
+		texture!(I_EMPTY),
+		texture!(I_STORE),
+		texture!(I_STORED),
+		texture!(I_CRATE),
+		texture!(I_PLAYER),
+		texture!(I_SPLAYER),
+		texture!(I_WALL),
+		texture!(255, 255, 255),
+	];
+
 		g
 	}
 
@@ -518,11 +592,16 @@ impl<'ttf> Game<'ttf> {
 		}
 	}
 
+	/*
 	fn draw_map(
 		&mut self,
 		canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
 		textures: &[sdl2::render::Texture<'_>],
 		texture_creator: &sdl2::render::TextureCreator<sdl2::video::WindowContext>,
+	) {
+	*/
+	fn draw_map(
+		&mut self,
 	) {
 		let curr_ticks = SystemTime::now();
 		let duration = curr_ticks
@@ -537,12 +616,12 @@ impl<'ttf> Game<'ttf> {
 			self.must_draw = true;
 		}
 		if self.must_draw {
-			canvas.set_draw_color(Color::RGB(0, 0, 0));
-			canvas.clear();
+			self.canvas.set_draw_color(Color::RGB(0, 0, 0));
+			self.canvas.clear();
 			// bottom status bar
-			canvas
+			self.canvas
 				.copy(
-					&textures[N_WHITE],
+					&self.textures[N_WHITE],
 					None,
 					Rect::new(
 						0,
@@ -577,9 +656,9 @@ impl<'ttf> Game<'ttf> {
 					} else {
 						N_EMPTY
 					};
-					canvas
+					self.canvas
 						.copy(
-							&textures[idx as usize],
+							&self.textures[idx as usize],
 							None,
 							Rect::new(
 								(x + i * self.bw) as i32,
@@ -609,9 +688,9 @@ impl<'ttf> Game<'ttf> {
 				ts,
 				state
 			);
-			let texture = create_texture_from_text(texture_creator, &self.font, &text, 0, 0, 0)
+			let texture = create_texture_from_text(&self.texture_creator, &self.font, &text, 0, 0, 0)
 				.expect("Cannot render text");
-			canvas
+			self.canvas
 				.copy(
 					&texture,
 					None,
@@ -623,12 +702,16 @@ impl<'ttf> Game<'ttf> {
 					)),
 				)
 				.expect("Couldn't copy text");
-			canvas.present();
+			self.canvas.present();
 			self.must_draw = false;
 		}
 	}
 
-	fn handle_events(&mut self, event_pump: &mut sdl2::EventPump) {
+	fn handle_events(&mut self) {
+		let mut event_pump = self.sdl_context.event_pump().expect(
+			"Failed to get
+          SDL event pump",
+		);
 		for event in event_pump.poll_iter() {
 			match event {
 				Event::Quit { .. } => {
@@ -802,6 +885,7 @@ fn load_texture<'a>(
 }
 
 fn main() {
+	/*
 	let width = WIDTH;
 	let height = HEIGHT;
 	let sdl_context = sdl2::init().expect("SDL initialization failed");
@@ -821,10 +905,6 @@ fn main() {
 		.present_vsync()
 		.build()
 		.expect("Couldn't get window's canvas");
-	let mut event_pump = sdl_context.event_pump().expect(
-		"Failed to get
-          SDL event pump",
-	);
 	let texture_creator: TextureCreator<_> = canvas.texture_creator();
 	let root_dir = current_exe().unwrap();
 	let root_dir = root_dir
@@ -834,7 +914,7 @@ fn main() {
 		.unwrap()
 		.parent()
 		.unwrap();
-	let mut game = Game::new(&ttf_context, root_dir, width, height);
+	let mut game = Game::new(&sdl_context, &ttf_context, root_dir, width, height);
 	macro_rules! texture {
 		($r:expr, $g:expr, $b:expr) => {
 			create_texture_rect(
@@ -862,9 +942,12 @@ fn main() {
 		texture!(I_WALL),
 		texture!(255, 255, 255),
 	];
+	*/
+	let mut game = Game::new();
 	while !game.quit {
-		game.handle_events(&mut event_pump);
-		game.draw_map(&mut canvas, &textures, &texture_creator);
+		game.handle_events();
+		//game.draw_map(&mut canvas, &textures, &texture_creator);
+		game.draw_map();
 		game.sleep();
 	}
 }
