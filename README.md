@@ -47,7 +47,6 @@ in order to build on Windows.
 - All the levels are Copyright Thinking Rabbit, downloaded from this [URL](https://www.sourcecode.se/sokoban/levels?act=dnl_text&file=Original.slc).
 - Artwork based on Sokoban PC version Copyright Spectrum Holobyte, taken from screenshots at this [URL](https://www.abandonware-france.org/ltf_abandon/ltf_jeu.php?id=468)
 
-[RustWorkflowBadge]: https://github.com/nsauzede/cratesan_/workflows/Rust/badge.svg
-[VWorkflowBadge]: https://github.com/nsauzede/cratesan_/workflows/V/badge.svg
-
-[WorkflowUrl]: https://github.com/nsauzede/cratesan_/commits/main
+[RustWorkflowBadge]: https://github.com/nsauzede/cratesan/workflows/Rust/badge.svg
+[VWorkflowBadge]: https://github.com/nsauzede/cratesan/workflows/V/badge.svg
+[WorkflowUrl]: https://github.com/nsauzede/cratesan/commits/main
