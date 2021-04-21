@@ -188,14 +188,14 @@ fn (mut g Game) save_score() {
 
 fn save_scores(scores []Score) {
 	if scores.len > 0 {
-		os.rm(scores_file) // TODO : understand why create doesn't reset contents
+		os.rm(scores_file) or { panic(err) } // TODO : understand why create doesn't reset contents
 		mut f := os.create(scores_file) or {
 			panic("can't create scores file")
 		}
-		f.writeln('$version')
-		f.writeln('$scores.len')
+		f.writeln('$version') or { panic(err) }
+		f.writeln('$scores.len') or { panic(err) }
 		for s in scores {
-			f.writeln('$s.level $s.pushes $s.moves $s.time_s')
+			f.writeln('$s.level $s.pushes $s.moves $s.time_s') or { panic(err) }
 		}
 	}
 }
