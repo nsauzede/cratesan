@@ -20,4 +20,4 @@ jobs:
         (cd v ; make)
         v/v install nsauzede.vsdl2
     - name: build
-      run: v/v build src/cratesan.v
+      run: v/v -o cratesan src/cratesan.v
