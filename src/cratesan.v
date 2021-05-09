@@ -556,12 +556,16 @@ fn (mut g Game) draw_map() {
 		for j, line in g.snap.state.map {
 			for i, e in line {
 				rect = vsdl2.Rect{x + i * g.bw, y + j * g.bh, g.bw, g.bh}
-				tex := match e {
+				mut tex := match e {
 					empty {
-						if g.snap.state.px == i && g.snap.state.py == j { g.block_text[n_player] } else { g.block_text[n_empty] }
+						// FIXME restore
+						// if g.snap.state.px == i && g.snap.state.py == j { g.block_text[n_player] } else { g.block_text[n_empty] }
+						g.block_text[n_empty]
 					}
 					store {
-						if g.snap.state.px == i && g.snap.state.py == j { g.block_text[n_splayer] } else { g.block_text[n_store] }
+						// FIXME restore
+						// if g.snap.state.px == i && g.snap.state.py == j { g.block_text[n_splayer] } else { g.block_text[n_store] }
+						g.block_text[n_store]
 					}
 					crate {
 						g.block_text[n_crate]
@@ -574,6 +578,14 @@ fn (mut g Game) draw_map() {
 					}
 					else {
 						voidptr(0)
+					}
+				}
+				// FIXME remove
+				if g.snap.state.px == i && g.snap.state.py == j {
+					tex = match e {
+						empty {g.block_text[n_player]}
+						store {g.block_text[n_splayer]}
+						else{tex}
 					}
 				}
 				if !isnil(tex) {
