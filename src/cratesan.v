@@ -612,14 +612,14 @@ fn (mut g Game) handle_events() {
 	ev := vsdl2.Event{}
 	mut cont := true
 	for cont && 0 < vsdl2.poll_event(&ev) {
-		match int(ev.@type) {
+		match unsafe {int(ev.@type)} {
 			C.SDL_QUIT {
 				g.quit = true
 				cont = false
 				break
 			}
 			C.SDL_KEYDOWN {
-				key := ev.key.keysym.sym
+				key := unsafe{ev.key.keysym.sym}
 				match key {
 					C.SDLK_ESCAPE {
 						g.quit = true
@@ -646,9 +646,9 @@ fn (mut g Game) handle_events() {
 
 fn (mut g Game) handle_event_play(ev vsdl2.Event) bool {
 	mut cont := true
-	match int(ev.@type) {
+	match unsafe {int(ev.@type)} {
 		C.SDL_KEYDOWN {
-			key := ev.key.keysym.sym
+			key := unsafe{ev.key.keysym.sym}
 			match key {
 				C.SDLK_SPACE {
 					g.status = .pause
@@ -695,9 +695,9 @@ fn (mut g Game) handle_event_play(ev vsdl2.Event) bool {
 
 fn (mut g Game) handle_event_pause(ev vsdl2.Event) bool {
 	mut cont := true
-	match int(ev.@type) {
+	match unsafe{int(ev.@type)} {
 		C.SDL_KEYDOWN {
-			key := ev.key.keysym.sym
+			key := unsafe{ev.key.keysym.sym}
 			match key {
 				C.SDLK_SPACE {
 					g.status = .play
@@ -714,9 +714,9 @@ fn (mut g Game) handle_event_pause(ev vsdl2.Event) bool {
 
 fn (mut g Game) handle_event_win(ev vsdl2.Event) bool {
 	mut cont := true
-	match int(ev.@type) {
+	match unsafe{int(ev.@type)} {
 		C.SDL_KEYDOWN {
-			key := ev.key.keysym.sym
+			key := unsafe{ev.key.keysym.sym}
 			match key {
 				C.SDLK_RETURN {
 					if g.set_level(g.level + 1) {
