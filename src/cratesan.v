@@ -35,16 +35,28 @@ const (
 	i_store     = res_dir + '/images/store.png'
 	i_stored    = res_dir + '/images/stored.png'
 	i_crate     = res_dir + '/images/crate.png'
-	i_player    = res_dir + '/images/player.png'
-	i_splayer   = res_dir + '/images/splayer.png'
 	i_wall      = res_dir + '/images/wall.png'
+	i_playerw   = res_dir + '/images/playerw.png'	// player West
+	i_splayerw  = res_dir + '/images/splayerw.png'
+	i_playern   = res_dir + '/images/playern.png'	// player North
+	i_splayern  = res_dir + '/images/splayern.png'
+	i_playere   = res_dir + '/images/playere.png'	// player East
+	i_splayere  = res_dir + '/images/splayere.png'
+	i_players   = res_dir + '/images/players.png'	// player South
+	i_splayers  = res_dir + '/images/splayers.png'
 	n_empty     = 0
 	n_store     = 1
 	n_stored    = 2
 	n_crate     = 3
-	n_player    = 4
-	n_splayer   = 5
-	n_wall      = 6
+	n_wall      = 4
+	n_playerw   = 5
+	n_splayerw  = 6
+	n_playern   = 7
+	n_splayern  = 8
+	n_playere   = 9
+	n_splayere  = 10
+	n_players   = 11
+	n_splayers  = 12
 )
 
 enum Status {
@@ -88,6 +100,7 @@ mut:
 	stored int
 	px     int
 	py     int
+	dir    int	// player direction (0:W 1:N: 2:E 3:S)
 	undos  int
 }
 
@@ -291,6 +304,17 @@ fn (mut g Game) try_move(dx int, dy int) bool {
 		g.snap.state.moves++
 		g.snap.state.px = x
 		g.snap.state.py = y
+		g.snap.state.dir = 0
+		match dx {
+			-1 {g.snap.state.dir = 0}
+			1 {g.snap.state.dir = 2}
+			else{}
+		}
+		match dy {
+			-1 {g.snap.state.dir = 1}
+			1 {g.snap.state.dir = 3}
+			else{}
+		}
 		g.debug_dump()
 		g.must_draw = true
 	}
@@ -511,9 +535,15 @@ fn new_game() Game {
 	g.load_tex(i_store)
 	g.load_tex(i_stored)
 	g.load_tex(i_crate)
-	g.load_tex(i_player)
-	g.load_tex(i_splayer)
 	g.load_tex(i_wall)
+	g.load_tex(i_playerw)
+	g.load_tex(i_splayerw)
+	g.load_tex(i_playern)
+	g.load_tex(i_splayern)
+	g.load_tex(i_playere)
+	g.load_tex(i_splayere)
+	g.load_tex(i_players)
+	g.load_tex(i_splayers)
 	return g
 }
 
@@ -559,12 +589,12 @@ fn (mut g Game) draw_map() {
 				mut tex := match e {
 					empty {
 						// FIXME restore
-						// if g.snap.state.px == i && g.snap.state.py == j { g.block_text[n_player] } else { g.block_text[n_empty] }
+						// if g.snap.state.px == i && g.snap.state.py == j { g.block_text[n_playerw] } else { g.block_text[n_empty] }
 						g.block_text[n_empty]
 					}
 					store {
 						// FIXME restore
-						// if g.snap.state.px == i && g.snap.state.py == j { g.block_text[n_splayer] } else { g.block_text[n_store] }
+						// if g.snap.state.px == i && g.snap.state.py == j { g.block_text[n_splayerw] } else { g.block_text[n_store] }
 						g.block_text[n_store]
 					}
 					crate {
@@ -582,10 +612,35 @@ fn (mut g Game) draw_map() {
 				}
 				// FIXME remove
 				if g.snap.state.px == i && g.snap.state.py == j {
-					tex = match e {
-						empty {g.block_text[n_player]}
-						store {g.block_text[n_splayer]}
-						else{tex}
+					match g.snap.state.dir {
+						1 {
+							tex = match e {
+								empty {g.block_text[n_playern]}
+								store {g.block_text[n_splayern]}
+								else{tex}
+							}
+						}
+						2 {
+							tex = match e {
+								empty {g.block_text[n_playere]}
+								store {g.block_text[n_splayere]}
+								else{tex}
+							}
+						}
+						3 {
+							tex = match e {
+								empty {g.block_text[n_players]}
+								store {g.block_text[n_splayers]}
+								else{tex}
+							}
+						}
+						else {
+							tex = match e {
+								empty {g.block_text[n_playerw]}
+								store {g.block_text[n_splayerw]}
+								else{tex}
+							}
+						}
 					}
 				}
 				if !isnil(tex) {

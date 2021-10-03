@@ -39,17 +39,29 @@ const I_EMPTY: &str = "empty.png";
 const I_STORE: &str = "store.png";
 const I_STORED: &str = "stored.png";
 const I_CRATE: &str = "crate.png";
-const I_PLAYER: &str = "player.png";
-const I_SPLAYER: &str = "splayer.png";
 const I_WALL: &str = "wall.png";
+const I_PLAYERW: &str = "playerw.png";
+const I_SPLAYERW: &str = "splayerw.png";
+const I_PLAYERN: &str = "playern.png";
+const I_SPLAYERN: &str = "splayern.png";
+const I_PLAYERE: &str = "playere.png";
+const I_SPLAYERE: &str = "splayere.png";
+const I_PLAYERS: &str = "players.png";
+const I_SPLAYERS: &str = "splayers.png";
 const N_EMPTY: usize = 0;
 const N_STORE: usize = 1;
 const N_STORED: usize = 2;
 const N_CRATE: usize = 3;
-const N_PLAYER: usize = 4;
-const N_SPLAYER: usize = 5;
-const N_WALL: usize = 6;
-const N_WHITE: usize = 7;
+const N_WALL: usize = 4;
+const N_PLAYERW: usize = 5;
+const N_SPLAYERW: usize = 6;
+const N_PLAYERN: usize = 7;
+const N_SPLAYERN: usize = 8;
+const N_PLAYERE: usize = 9;
+const N_SPLAYERE: usize = 10;
+const N_PLAYERS: usize = 11;
+const N_SPLAYERS: usize = 12;
+const N_WHITE: usize = 13;
 
 type Map = Vec<Vec<u8>>;
 
@@ -93,6 +105,7 @@ struct State {
 	stored: u32,
 	px: usize,
 	py: usize,
+	dir: i32,	// player direction (0:W 1:N: 2:E 3:S)
 	undos: u32,
 }
 
@@ -144,6 +157,7 @@ impl<'ttf> Game<'ttf> {
 			stored: self.snap.state.stored,
 			px: self.snap.state.px,
 			py: self.snap.state.py,
+			dir: self.snap.state.dir,
 			time_s: self.snap.state.time_s,
 			pushes: self.snap.state.pushes,
 			moves: self.snap.state.moves,
@@ -509,6 +523,17 @@ impl<'ttf> Game<'ttf> {
 			self.snap.state.moves += 1;
 			self.snap.state.px = x;
 			self.snap.state.py = y;
+			self.snap.state.dir = 0;
+			match dx {
+				-1 => { self.snap.state.dir = 0; }
+				1 => { self.snap.state.dir = 2; }
+				_ => {}
+			}
+			match dy {
+				-1 => { self.snap.state.dir = 1; }
+				1 => { self.snap.state.dir = 3; }
+				_ => {}
+			}
 			if let Status::Win = self.status {
 				self.save_score();
 				self.save_scores();
@@ -558,13 +583,25 @@ impl<'ttf> Game<'ttf> {
 				for (i, &e) in line.iter().enumerate() {
 					let idx = if e == EMPTY {
 						if self.snap.state.px == i && self.snap.state.py == j {
-							N_PLAYER
+							match self.snap.state.dir {
+								0 => { N_PLAYERW }
+								1 => { N_PLAYERN }
+								2 => { N_PLAYERE }
+								3 => { N_PLAYERS }
+								_ => { N_PLAYERW }
+							}
 						} else {
 							N_EMPTY
 						}
 					} else if e == STORE {
 						if self.snap.state.px == i && self.snap.state.py == j {
-							N_SPLAYER
+							match self.snap.state.dir {
+								0 => { N_SPLAYERW }
+								1 => { N_SPLAYERN }
+								2 => { N_SPLAYERE }
+								3 => { N_SPLAYERS }
+								_ => { N_SPLAYERW }
+							}
 						} else {
 							N_STORE
 						}
@@ -857,9 +894,15 @@ fn main() {
 		texture!(I_STORE),
 		texture!(I_STORED),
 		texture!(I_CRATE),
-		texture!(I_PLAYER),
-		texture!(I_SPLAYER),
 		texture!(I_WALL),
+		texture!(I_PLAYERW),
+		texture!(I_SPLAYERW),
+		texture!(I_PLAYERN),
+		texture!(I_SPLAYERN),
+		texture!(I_PLAYERE),
+		texture!(I_SPLAYERE),
+		texture!(I_PLAYERS),
+		texture!(I_SPLAYERS),
 		texture!(255, 255, 255),
 	];
 	while !game.quit {
