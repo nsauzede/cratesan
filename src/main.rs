@@ -523,6 +523,17 @@ impl<'ttf> Game<'ttf> {
 			self.snap.state.moves += 1;
 			self.snap.state.px = x;
 			self.snap.state.py = y;
+			self.snap.state.dir = 0;
+			match dx {
+				-1 => { self.snap.state.dir = 0; }
+				1 => { self.snap.state.dir = 2; }
+				_ => {}
+			}
+			match dy {
+				-1 => { self.snap.state.dir = 1; }
+				1 => { self.snap.state.dir = 3; }
+				_ => {}
+			}
 			if let Status::Win = self.status {
 				self.save_score();
 				self.save_scores();
@@ -572,13 +583,25 @@ impl<'ttf> Game<'ttf> {
 				for (i, &e) in line.iter().enumerate() {
 					let idx = if e == EMPTY {
 						if self.snap.state.px == i && self.snap.state.py == j {
-							N_PLAYERW
+							match self.snap.state.dir {
+								0 => { N_PLAYERW }
+								1 => { N_PLAYERN }
+								2 => { N_PLAYERE }
+								3 => { N_PLAYERS }
+								_ => { N_PLAYERW }
+							}
 						} else {
 							N_EMPTY
 						}
 					} else if e == STORE {
 						if self.snap.state.px == i && self.snap.state.py == j {
-							N_SPLAYERW
+							match self.snap.state.dir {
+								0 => { N_SPLAYERW }
+								1 => { N_SPLAYERN }
+								2 => { N_SPLAYERE }
+								3 => { N_SPLAYERS }
+								_ => { N_SPLAYERW }
+							}
 						} else {
 							N_STORE
 						}
