@@ -70,7 +70,7 @@ struct Level {
 mut:
 	w      int // map dims
 	h      int // map dims
-	map    [][]byte // map
+	map_    [][]byte // map
 	stored int // number of stored crates
 	px     int // player pos
 	py     int // player pos
@@ -93,7 +93,7 @@ mut:
 
 struct State {
 mut:
-	map    [][]byte // TODO : make it an option ? (ie: map ?[][]byte) -- seems broken rn
+	map_    [][]byte // TODO : make it an option ? (ie: map ?[][]byte) -- seems broken rn
 	moves  int
 	pushes int
 	time_s u32
@@ -146,18 +146,18 @@ fn (g Game) save_state(mut state State, full bool) {
 	unsafe {
 		*state = g.snap.state
 	}
-	mut map := [][]byte{}
+	mut map_ := [][]byte{}
 	if full {
-		map = g.snap.state.map.clone()
+		map_ = g.snap.state.map_.clone()
 	}
-	state.map = map
+	state.map_ = map_
 }
 
 fn (mut g Game) restore_state(state State) {
-	map := g.snap.state.map
+	map_ := g.snap.state.map_
 	g.snap.state = state
-	if state.map.len == 0 {
-		g.snap.state.map = map
+	if state.map_.len == 0 {
+		g.snap.state.map_ = map_
 	}
 }
 
@@ -201,7 +201,7 @@ fn (mut g Game) save_score() {
 
 fn save_scores(scores []Score) {
 	if scores.len > 0 {
-		os.rm(scores_file) or { panic(err) } // TODO : understand why create doesn't reset contents
+		os.rm(scores_file) or { println(err) } // TODO : understand why create doesn't reset contents
 		mut f := os.create(scores_file) or {
 			panic("can't create scores file")
 		}
@@ -260,7 +260,7 @@ fn (mut g Game) push_undo(full bool) {
 
 fn (mut g Game) can_move(x int, y int) bool {
 	if x < g.levels[g.level].w && y < g.levels[g.level].h {
-		e := g.snap.state.map[y][x]
+		e := g.snap.state.map_[y][x]
 		if e == empty || e == store {
 			return true
 		}
@@ -273,19 +273,19 @@ fn (mut g Game) try_move(dx int, dy int) bool {
 	mut do_it := false
 	x := g.snap.state.px + dx
 	y := g.snap.state.py + dy
-	if g.snap.state.map[y][x] & crate == crate {
+	if g.snap.state.map_[y][x] & crate == crate {
 		to_x := x + dx
 		to_y := y + dy
 		if g.can_move(to_x, to_y) {
 			do_it = true
 			g.push_undo(true)
 			g.snap.state.pushes++
-			g.snap.state.map[y][x] &= ~crate
-			if g.snap.state.map[y][x] & store == store {
+			g.snap.state.map_[y][x] &= ~crate
+			if g.snap.state.map_[y][x] & store == store {
 				g.snap.state.stored--
 			}
-			g.snap.state.map[to_y][to_x] |= crate
-			if g.snap.state.map[to_y][to_x] & store == store {
+			g.snap.state.map_[to_y][to_x] |= crate
+			if g.snap.state.map_[to_y][to_x] & store == store {
 				g.snap.state.stored++
 				if g.snap.state.stored == g.levels[g.level].crates {
 					g.status = .win
@@ -345,7 +345,7 @@ fn load_levels() []Level {
 		vlevels << slevel
 	}
 	for s in vlevels {
-		mut map := [][]byte{}
+		mut map_ := [][]byte{}
 		mut crates := 0
 		mut stores := 0
 		mut stored := 0
@@ -410,7 +410,7 @@ fn load_levels() []Level {
 					}
 				}
 			}
-			map << v
+			map_ << v
 			h++
 		}
 		if crates != stores {
@@ -420,7 +420,7 @@ fn load_levels() []Level {
 			panic('Player not found in level')
 		}
 		levels << Level{
-			map: map
+			map_: map_
 			crates: crates
 			stored: stored
 			w: w
@@ -439,7 +439,7 @@ fn (mut g Game) set_level(level int) bool {
 		g.level = level
 		g.snap = Snapshot{
 			state: State{
-				map: g.levels[g.level].map.clone()
+				map_: g.levels[g.level].map_.clone()
 			}
 		}
 		g.snap.undo_states = []State{}
@@ -583,7 +583,7 @@ fn (mut g Game) draw_map() {
 		C.SDL_RenderCopy(g.renderer, g.texture, voidptr(0), voidptr(0))
 		x := (width - g.levels[g.level].w * g.bw) / 2
 		y := 0
-		for j, line in g.snap.state.map {
+		for j, line in g.snap.state.map_ {
 			for i, e in line {
 				rect = vsdl2.Rect{x + i * g.bw, y + j * g.bh, g.bw, g.bh}
 				mut tex := match e {
