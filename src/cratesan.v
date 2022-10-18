@@ -36,13 +36,13 @@ const (
 	i_stored    = res_dir + '/images/stored.png'
 	i_crate     = res_dir + '/images/crate.png'
 	i_wall      = res_dir + '/images/wall.png'
-	i_playerw   = res_dir + '/images/playerw.png'	// player West
+	i_playerw   = res_dir + '/images/playerw.png' // player West
 	i_splayerw  = res_dir + '/images/splayerw.png'
-	i_playern   = res_dir + '/images/playern.png'	// player North
+	i_playern   = res_dir + '/images/playern.png' // player North
 	i_splayern  = res_dir + '/images/splayern.png'
-	i_playere   = res_dir + '/images/playere.png'	// player East
+	i_playere   = res_dir + '/images/playere.png' // player East
 	i_splayere  = res_dir + '/images/splayere.png'
-	i_players   = res_dir + '/images/players.png'	// player South
+	i_players   = res_dir + '/images/players.png' // player South
 	i_splayers  = res_dir + '/images/splayers.png'
 	n_empty     = 0
 	n_store     = 1
@@ -68,12 +68,12 @@ enum Status {
 struct Level {
 	crates int // number of crates
 mut:
-	w      int // map dims
-	h      int // map dims
-	map_    [][]byte // map
-	stored int // number of stored crates
-	px     int // player pos
-	py     int // player pos
+	w      int      // map dims
+	h      int      // map dims
+	map_   [][]byte // map
+	stored int      // number of stored crates
+	px     int      // player pos
+	py     int      // player pos
 }
 
 struct Score {
@@ -93,30 +93,30 @@ mut:
 
 struct State {
 mut:
-	map_    [][]byte // TODO : make it an option ? (ie: map ?[][]byte) -- seems broken rn
+	map_   [][]byte // TODO : make it an option ? (ie: map ?[][]byte) -- seems broken rn
 	moves  int
 	pushes int
 	time_s u32
 	stored int
 	px     int
 	py     int
-	dir    int	// player direction (0:W 1:N: 2:E 3:S)
+	dir    int // player direction (0:W 1:N: 2:E 3:S)
 	undos  int
 }
 
 struct Game {
 mut:
 	// Game flags and status
-	quit       bool
-	status     Status
-	must_draw  bool
-	debug      bool
+	quit      bool
+	status    Status
+	must_draw bool
+	debug     bool
 	// Game levels
-	levels     []Level
-	level      int // current level
+	levels []Level
+	level  int // current level
 	// Game states
 	snapshots  []Snapshot // saved snapshots (currently only one max)
-	snap       Snapshot // current snapshot : state + undo_states
+	snap       Snapshot   // current snapshot : state + undo_states
 	last_ticks u32
 	scores     []Score
 	// SDL stuff
@@ -131,13 +131,14 @@ mut:
 	block_surf []&vsdl2.Surface
 	block_text []voidptr
 	// TTF stuff
-	font       voidptr
+	font voidptr
 }
 
 fn (g Game) debug_dump() {
 	if g.debug {
-		println('level=${g.level + 1}' + ' moves=$g.snap.state.moves' + ' pushes=$g.snap.state.pushes' +
-			' time=$g.snap.state.time_s' + ' crates=$g.snap.state.stored/${g.levels[g.level].crates}' + ' snaps=$g.snapshots.len' +
+		println('level=${g.level + 1}' + ' moves=$g.snap.state.moves' +
+			' pushes=$g.snap.state.pushes' + ' time=$g.snap.state.time_s' +
+			' crates=$g.snap.state.stored/${g.levels[g.level].crates}' + ' snaps=$g.snapshots.len' +
 			' undos=$g.snap.state.undos/$g.snap.undo_states.len')
 	}
 }
@@ -202,9 +203,7 @@ fn (mut g Game) save_score() {
 fn save_scores(scores []Score) {
 	if scores.len > 0 {
 		os.rm(scores_file) or { println(err) } // TODO : understand why create doesn't reset contents
-		mut f := os.create(scores_file) or {
-			panic("can't create scores file")
-		}
+		mut f := os.create(scores_file) or { panic("can't create scores file") }
 		f.writeln('$version') or { panic(err) }
 		f.writeln('$scores.len') or { panic(err) }
 		for s in scores {
@@ -216,9 +215,7 @@ fn save_scores(scores []Score) {
 fn load_scores() []Score {
 	mut ret := []Score{}
 	mut nscores := 0
-	contents := os.read_file(scores_file) or {
-		return ret
-	}
+	contents := os.read_file(scores_file) or { return ret }
 	mut n := 0
 	for line in contents.split_into_lines() {
 		if n == 0 {
@@ -235,7 +232,8 @@ fn load_scores() []Score {
 		n++
 	}
 	if nscores != ret.len {
-		panic('Invalid number of scores (read $nscores parsed $ret.len). Please delete the scores file $scores_file' +
+		panic(
+			'Invalid number of scores (read $nscores parsed $ret.len). Please delete the scores file $scores_file' +
 			'.')
 	}
 	return ret
@@ -306,14 +304,14 @@ fn (mut g Game) try_move(dx int, dy int) bool {
 		g.snap.state.py = y
 		g.snap.state.dir = 0
 		match dx {
-			-1 {g.snap.state.dir = 0}
-			1 {g.snap.state.dir = 2}
-			else{}
+			-1 { g.snap.state.dir = 0 }
+			1 { g.snap.state.dir = 2 }
+			else {}
 		}
 		match dy {
-			-1 {g.snap.state.dir = 1}
-			1 {g.snap.state.dir = 3}
-			else{}
+			-1 { g.snap.state.dir = 1 }
+			1 { g.snap.state.dir = 3 }
+			else {}
 		}
 		g.debug_dump()
 		g.must_draw = true
@@ -325,9 +323,7 @@ fn load_levels() []Level {
 	mut levels := []Level{}
 	mut vlevels := []string{}
 	mut slevel := ''
-	slevels := os.read_file(levels_file.trim_space()) or {
-		panic('Failed to open levels file')
-	}
+	slevels := os.read_file(levels_file.trim_space()) or { panic('Failed to open levels file') }
 	for line in slevels.split_into_lines() {
 		if line.len == 0 {
 			if slevel.len > 0 {
@@ -556,7 +552,7 @@ fn (g &Game) draw_text(x int, y int, text string, tcol vsdl2.Color) {
 		texh := 0
 		C.SDL_QueryTexture(ttext, 0, 0, &texw, &texh)
 		dstrect := vsdl2.Rect{x, y, texw, texh}
-		vsdl2.render_copy(g.renderer, ttext, voidptr(0), &dstrect)
+		vsdl2.render_copy(g.renderer, ttext, unsafe { nil }, &dstrect)
 		C.SDL_DestroyTexture(ttext)
 		vsdl2.free_surface(tsurf)
 	}
@@ -580,7 +576,7 @@ fn (mut g Game) draw_map() {
 		rect = vsdl2.Rect{0, height - text_size * text_ratio, g.width, text_size * text_ratio}
 		vsdl2.fill_rect(g.screen, &rect, white)
 		C.SDL_UpdateTexture(g.texture, 0, g.screen.pixels, g.screen.pitch)
-		C.SDL_RenderCopy(g.renderer, g.texture, voidptr(0), voidptr(0))
+		C.SDL_RenderCopy(g.renderer, g.texture, unsafe { nil }, unsafe { nil })
 		x := (width - g.levels[g.level].w * g.bw) / 2
 		y := 0
 		for j, line in g.snap.state.map_ {
@@ -607,7 +603,7 @@ fn (mut g Game) draw_map() {
 						g.block_text[n_stored]
 					}
 					else {
-						voidptr(0)
+						unsafe { nil }
 					}
 				}
 				// FIXME remove
@@ -615,36 +611,36 @@ fn (mut g Game) draw_map() {
 					match g.snap.state.dir {
 						1 {
 							tex = match e {
-								empty {g.block_text[n_playern]}
-								store {g.block_text[n_splayern]}
-								else{tex}
+								empty { g.block_text[n_playern] }
+								store { g.block_text[n_splayern] }
+								else { tex }
 							}
 						}
 						2 {
 							tex = match e {
-								empty {g.block_text[n_playere]}
-								store {g.block_text[n_splayere]}
-								else{tex}
+								empty { g.block_text[n_playere] }
+								store { g.block_text[n_splayere] }
+								else { tex }
 							}
 						}
 						3 {
 							tex = match e {
-								empty {g.block_text[n_players]}
-								store {g.block_text[n_splayers]}
-								else{tex}
+								empty { g.block_text[n_players] }
+								store { g.block_text[n_splayers] }
+								else { tex }
 							}
 						}
 						else {
 							tex = match e {
-								empty {g.block_text[n_playerw]}
-								store {g.block_text[n_splayerw]}
-								else{tex}
+								empty { g.block_text[n_playerw] }
+								store { g.block_text[n_splayerw] }
+								else { tex }
 							}
 						}
 					}
 				}
 				if !isnil(tex) {
-					vsdl2.render_copy(g.renderer, tex, voidptr(0), &rect)
+					vsdl2.render_copy(g.renderer, tex, unsafe { nil }, &rect)
 				}
 			}
 		}
@@ -667,14 +663,14 @@ fn (mut g Game) handle_events() {
 	ev := vsdl2.Event{}
 	mut cont := true
 	for cont && 0 < vsdl2.poll_event(&ev) {
-		match unsafe {int(ev.@type)} {
+		match unsafe { int(ev.@type) } {
 			C.SDL_QUIT {
 				g.quit = true
 				cont = false
 				break
 			}
 			C.SDL_KEYDOWN {
-				key := unsafe{ev.key.keysym.sym}
+				key := unsafe { ev.key.keysym.sym }
 				match key {
 					C.SDLK_ESCAPE {
 						g.quit = true
@@ -701,9 +697,9 @@ fn (mut g Game) handle_events() {
 
 fn (mut g Game) handle_event_play(ev vsdl2.Event) bool {
 	mut cont := true
-	match unsafe {int(ev.@type)} {
+	match unsafe { int(ev.@type) } {
 		C.SDL_KEYDOWN {
-			key := unsafe{ev.key.keysym.sym}
+			key := unsafe { ev.key.keysym.sym }
 			match key {
 				C.SDLK_SPACE {
 					g.status = .pause
@@ -750,9 +746,9 @@ fn (mut g Game) handle_event_play(ev vsdl2.Event) bool {
 
 fn (mut g Game) handle_event_pause(ev vsdl2.Event) bool {
 	mut cont := true
-	match unsafe{int(ev.@type)} {
+	match unsafe { int(ev.@type) } {
 		C.SDL_KEYDOWN {
-			key := unsafe{ev.key.keysym.sym}
+			key := unsafe { ev.key.keysym.sym }
 			match key {
 				C.SDLK_SPACE {
 					g.status = .play
@@ -769,9 +765,9 @@ fn (mut g Game) handle_event_pause(ev vsdl2.Event) bool {
 
 fn (mut g Game) handle_event_win(ev vsdl2.Event) bool {
 	mut cont := true
-	match unsafe{int(ev.@type)} {
+	match unsafe { int(ev.@type) } {
 		C.SDL_KEYDOWN {
-			key := unsafe{ev.key.keysym.sym}
+			key := unsafe { ev.key.keysym.sym }
 			match key {
 				C.SDLK_RETURN {
 					if g.set_level(g.level + 1) {
