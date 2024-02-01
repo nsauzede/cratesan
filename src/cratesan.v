@@ -70,7 +70,7 @@ struct Level {
 mut:
 	w      int      // map dims
 	h      int      // map dims
-	map_   [][]byte // map
+	map_   [][]u8 // map
 	stored int      // number of stored crates
 	px     int      // player pos
 	py     int      // player pos
@@ -78,7 +78,7 @@ mut:
 
 struct Score {
 mut:
-	// version byte = version
+	// version u8 = version
 	level  u16
 	moves  u16
 	pushes u16
@@ -93,7 +93,7 @@ mut:
 
 struct State {
 mut:
-	map_   [][]byte // TODO : make it an option ? (ie: map ?[][]byte) -- seems broken rn
+	map_   [][]u8 // TODO : make it an option ? (ie: map ?[][]u8) -- seems broken rn
 	moves  int
 	pushes int
 	time_s u32
@@ -122,7 +122,7 @@ mut:
 	// SDL stuff
 	window     voidptr
 	renderer   voidptr
-	screen     &vsdl2.Surface
+	screen     &vsdl2.Surface = voidptr(0)
 	texture    voidptr
 	width      int
 	height     int
@@ -147,7 +147,7 @@ fn (g Game) save_state(mut state State, full bool) {
 	unsafe {
 		*state = g.snap.state
 	}
-	mut map_ := [][]byte{}
+	mut map_ := [][]u8{}
 	if full {
 		map_ = g.snap.state.map_.clone()
 	}
@@ -341,7 +341,7 @@ fn load_levels() []Level {
 		vlevels << slevel
 	}
 	for s in vlevels {
-		mut map_ := [][]byte{}
+		mut map_ := [][]u8{}
 		mut crates := 0
 		mut stores := 0
 		mut stored := 0
@@ -359,7 +359,7 @@ fn load_levels() []Level {
 			if line.len == 0 {
 				continue
 			}
-			mut v := [byte(empty)].repeat(w)
+			mut v := [u8(empty)].repeat(w)
 			for i, e in line {
 				match e {
 					c_empty {
@@ -497,7 +497,6 @@ fn new_game() Game {
 		levels: levels
 		scores: scores
 		debug: false
-		screen: 0
 		font: 0
 	}
 	C.SDL_Init(C.SDL_INIT_VIDEO)
@@ -570,7 +569,7 @@ fn (mut g Game) draw_map() {
 	if g.must_draw {
 		C.SDL_RenderClear(g.renderer)
 		mut rect := vsdl2.Rect{0, 0, g.width, g.height}
-		mut col := vsdl2.Color{byte(0), byte(0), byte(0), byte(255)}
+		mut col := vsdl2.Color{u8(0), u8(0), u8(0), u8(255)}
 		vsdl2.fill_rect(g.screen, &rect, col)
 		// bottom status bar
 		rect = vsdl2.Rect{0, height - text_size * text_ratio, g.width, text_size * text_ratio}
